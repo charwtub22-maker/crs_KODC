@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>외장하드 접속 관리대장</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f2ed;
+    --surface: #ffffff;
+    --surface2: #f9f8f5;
+    --border: #e0ddd6;
+    --border2: #ccc9c0;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9b93;
+    --accent: #1a4f8a;
+    --danger: #8a1a1a;
+    --danger-bg: #fae8e8;
+    --danger-border: #e8b8b8;
+    --success: #1a6640;
+    --success-bg: #e8f5ee;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .page-wrap { max-width: 960px; margin: 0 auto; }
+
+  .header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .header-left .stamp {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em;
+    color: var(--text3); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .header-left h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px; }
+  .header-left p { font-size: 12px; color: var(--text2); }
+  .stat { text-align: right; }
+  .stat-num { font-size: 26px; font-weight: 600; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  .save-banner {
+    background: #fffbea; border: 1px solid #f0d070;
+    border-radius: var(--radius); padding: 10px 16px;
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 13px; color: #7a5c00;
+  }
+  .save-banner.hidden { display: none; }
+  .save-banner strong { font-weight: 600; }
+
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.5rem 2rem; margin-bottom: 1.25rem;
+  }
+  .form-card h2 {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+  }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+  label .req { color: var(--accent); }
+
+  .ip-row { display: flex; gap: 8px; align-items: stretch; }
+  .ip-row input { flex: 1; }
+
+  input[type="text"], input[type="datetime-local"] {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--surface); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,79,138,0.1); }
+  input::placeholder { color: var(--text3); }
+  input[readonly] { background: var(--surface2); color: var(--text2); cursor: default; }
+
+  .ip-status { font-size: 11px; color: var(--text3); margin-top: 3px; height: 15px; }
+  .ip-status.ok { color: var(--success); }
+  .ip-status.fail { color: #b36b00; }
+
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border2); background: var(--surface);
+    color: var(--text); cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  button:hover { background: var(--surface2); }
+  button:active { transform: scale(0.98); }
+
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #153f6e; border-color: #153f6e; }
+  .btn-save { background: #7a5c00; color: #fff; border-color: #7a5c00; }
+  .btn-save:hover { background: #5c4400; }
+  .btn-danger { color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg); }
+  .btn-danger:hover { background: #f5d5d5; }
+  .btn-export { color: var(--success); border-color: #a8d5b8; background: var(--success-bg); }
+  .btn-export:hover { background: #d0eadb; }
+
+  .form-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .msg-error { font-size: 12px; color: var(--danger); display: none; }
+  .msg-error.show { display: block; }
+
+  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .table-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); gap: 10px; flex-wrap: wrap;
+  }
+  .table-toolbar h2 { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .toolbar-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+  th {
+    padding: 9px 12px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  }
+  th.c, td.c { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:nth-child(even) { background: #fdfcfa; }
+  tbody tr:nth-child(even):hover { background: var(--surface2); }
+
+  .td-num { font-size: 11px; color: var(--text3); }
+  .td-user { font-weight: 500; }
+  .td-date { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .td-ip { font-size: 11px; color: var(--text2); white-space: nowrap; font-family: 'Courier New', monospace; }
+  .td-note { font-size: 12px; color: var(--text2); }
+  .btn-del { padding: 3px 8px; font-size: 11px; color: var(--danger); border-color: var(--danger-border); background: transparent; }
+  .btn-del:hover { background: var(--danger-bg); }
+
+  .empty-state { padding: 3rem; text-align: center; color: var(--text3); }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+  .footer { margin-top: 1.25rem; text-align: center; font-size: 12px; color: var(--text3); line-height: 1.8; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .form-card, .save-banner, .toolbar-btns, .btn-del, .footer { display: none !important; }
+    .table-card { box-shadow: none; border: 1px solid #ccc; }
+  }
+  @media (max-width: 640px) {
+    .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="stamp">보안 관리 문서 · External Drive Access Log</div>
+      <h1>외장하드 접속 관리대장</h1>
+      <p>접속 시마다 사용자 · 목적 · 일시 · IP를 기록합니다</p>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="total-num">0</div>
+      <div class="stat-label">총 접속 건수</div>
+    </div>
+  </div>
+
+  <div class="save-banner hidden" id="save-banner">
+    <span>⚠ <strong>저장되지 않은 변경사항이 있습니다.</strong> 파일 저장 버튼을 눌러 이 HTML 파일을 덮어쓰세요.</span>
+    <button class="btn-save" onclick="saveFile()">💾 파일 저장</button>
+  </div>
+
+  <div class="form-card">
+    <h2>새 접속 기록 입력</h2>
+    <div class="form-grid-3">
+      <div>
+        <label>사용자명 <span class="req">*</span></label>
+        <input type="text" id="inp-user" placeholder="예: 홍길동">
+      </div>
+      <div>
+        <label>접속 일시 <span class="req">*</span></label>
+        <input type="datetime-local" id="inp-date">
+      </div>
+      <div>
+        <label>IP 주소 (비고 자동 기록)</label>
+        <div class="ip-row">
+          <input type="text" id="inp-ip" placeholder="감지 중..." readonly>
+          <button onclick="fetchIP()" title="다시 감지" style="padding:8px 11px;">↻</button>
+        </div>
+        <div class="ip-status" id="ip-status"></div>
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div>
+        <label>접속 목적 <span class="req">*</span></label>
+        <input type="text" id="inp-purpose" placeholder="예: 분기 보고서 백업 파일 조회">
+      </div>
+      <div>
+        <label>비고 (선택)</label>
+        <input type="text" id="inp-note" placeholder="예: 승인번호 2024-031">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="addRecord()">＋ 기록 추가</button>
+      <button onclick="resetForm()">초기화</button>
+      <span class="msg-error" id="msg-error">사용자명, 접속 일시, 목적은 필수 항목입니다.</span>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <h2>접속 이력</h2>
+      <div class="toolbar-btns">
+        <button class="btn-save" onclick="saveFile()">💾 파일 저장</button>
+        <button class="btn-export" onclick="exportCSV()">↓ CSV 내보내기</button>
+        <button onclick="window.print()">⎙ 인쇄</button>
+        <button class="btn-danger" onclick="clearAll()">✕ 전체 삭제</button>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="c" style="width:44px;">번호</th>
+            <th style="width:11%;">사용자</th>
+            <th style="width:17%;">접속 일시</th>
+            <th style="width:13%;">IP 주소</th>
+            <th>목적</th>
+            <th style="width:15%;">비고</th>
+            <th class="c" style="width:44px;">삭제</th>
+          </tr>
+        </thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    💡 기록 추가 후 <strong>💾 파일 저장</strong>을 누르면 이 HTML 파일 안에 데이터가 포함되어 저장됩니다.<br>
+    저장된 파일을 외장하드에 넣으면 어느 PC에서 열어도 동일한 기록을 볼 수 있습니다.
+  </div>
+
+</div>
+<script>
+// DATA_START
+var RECORDS = [];
+// DATA_END
+
+var dirty = false;
+
+(function init() {
+  setNow();
+  fetchIP();
+  render();
+  window.addEventListener('beforeunload', function(e) {
+    if (dirty) { e.preventDefault(); e.returnValue = '저장하지 않은 기록이 있습니다.'; }
+  });
+})();
+
+function fetchIP() {
+  var el = document.getElementById('inp-ip');
+  var st = document.getElementById('ip-status');
+  el.value = '감지 중...';
+  st.textContent = '';
+  st.className = 'ip-status';
+  tryApis(['https://api.ipify.org?format=json', 'https://api4.my-ip.io/ip.json', 'https://ipapi.co/json/'], 0, el, st);
+}
+
+function tryApis(apis, idx, el, st) {
+  if (idx >= apis.length) {
+    el.value = '';
+    el.removeAttribute('readonly');
+    el.placeholder = '직접 입력';
+    st.textContent = '인터넷 미연결 — 직접 입력 가능';
+    st.className = 'ip-status fail';
+    return;
+  }
+  fetch(apis[idx])
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var ip = d.ip || d.IPv4 || '';
+      if (!ip) throw new Error('no ip');
+      el.value = ip;
+      el.setAttribute('readonly', '');
+      st.textContent = '✓ 공인 IP 자동 감지됨';
+      st.className = 'ip-status ok';
+    })
+    .catch(function() { tryApis(apis, idx + 1, el, st); });
+}
+
+function addRecord() {
+  var user = g('inp-user');
+  var date = g('inp-date');
+  var purpose = g('inp-purpose');
+  var ip = document.getElementById('inp-ip').value.trim() || '—';
+  var note = g('inp-note');
+  var errEl = document.getElementById('msg-error');
+  if (!user || !date || !purpose) { errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+  RECORDS.push({ id: Date.now(), user: user, date: date, ip: ip, purpose: purpose, note: note });
+  setDirty(true);
+  render();
+  resetForm();
+}
+
+function g(id) { return document.getElementById(id).value.trim(); }
+
+function resetForm() {
+  ['inp-user','inp-purpose','inp-note'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('msg-error').classList.remove('show');
+  setNow();
+  fetchIP();
+  document.getElementById('inp-user').focus();
+}
+
+function deleteRecord(id) {
+  if (!confirm('이 기록을 삭제하시겠습니까?')) return;
+  RECORDS = RECORDS.filter(function(r) { return r.id !== id; });
+  setDirty(true);
+  render();
+}
+
+function clearAll() {
+  if (!RECORDS.length) { alert('삭제할 기록이 없습니다.'); return; }
+  if (!confirm('전체 ' + RECORDS.length + '건을 모두 삭제하시겠습니까?')) return;
+  RECORDS = [];
+  setDirty(true);
+  render();
+}
+
+function render() {
+  document.getElementById('total-num').textContent = RECORDS.length;
+  var tbody = document.getElementById('log-body');
+  if (!RECORDS.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div><p>접속 기록이 없습니다. 위 양식에서 첫 기록을 추가하세요.</p></div></td></tr>';
+    return;
+  }
+  var sorted = RECORDS.slice().sort(function(a,b){ return new Date(b.date)-new Date(a.date); });
+  tbody.innerHTML = sorted.map(function(r,i) {
+    return '<tr>' +
+      '<td class="td-num c">'+(sorted.length-i)+'</td>'+
+      '<td class="td-user">'+esc(r.user)+'</td>'+
+      '<td class="td-date">'+fmtDate(r.date)+'</td>'+
+      '<td class="td-ip">'+esc(r.ip||'—')+'</td>'+
+      '<td>'+esc(r.purpose)+'</td>'+
+      '<td class="td-note">'+(r.note?esc(r.note):'<span style="color:#ccc">—</span>')+'</td>'+
+      '<td class="c"><button class="btn-del" onclick="deleteRecord('+r.id+')">삭제</button></td>'+
+      '</tr>';
+  }).join('');
+}
+
+function saveFile() {
+  var html = document.documentElement.outerHTML;
+  var newData = 'var RECORDS = ' + JSON.stringify(RECORDS) + ';';
+  html = html.replace(/\/\/ DATA_START[\s\S]*?\/\/ DATA_END/, '// DATA_START\n' + newData + '\n// DATA_END');
+  var d = new Date();
+  var p = function(n) { return String(n).padStart(2,'0'); };
+  var stamp = d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds());
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([html], {type:'text/html;charset=utf-8'}));
+  a.download = '외장하드_접속관리대장_' + stamp + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  setDirty(false);
+  alert('저장 완료: 외장하드_접속관리대장_' + stamp + '.html\n이전 파일은 삭제하거나 덮어쓰세요.');
+}
+
+function exportCSV() {
+  if (!RECORDS.length) { alert('내보낼 기록이 없습니다.'); return; }
+  var sorted = RECORDS.slice().sort(function(a,b){ return new Date(a.date)-new Date(b.date); });
+  var rows = [['번호','사용자','접속일시','IP주소','목적','비고']];
+  sorted.forEach(function(r,i){ rows.push([i+1,r.user,fmtDate(r.date),r.ip||'—',r.purpose,r.note||'']); });
+  var csv = '\uFEFF' + rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(','); }).join('\r\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+  a.download = '외장하드_접속기록_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+function setNow() {
+  var d = new Date();
+  d.setMinutes(d.getMinutes()-d.getTimezoneOffset());
+  document.getElementById('inp-date').value = d.toISOString().slice(0,16);
+}
+
+function fmtDate(iso) {
+  var d = new Date(iso), p = function(n){return String(n).padStart(2,'0');};
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setDirty(v) {
+  dirty = v;
+  document.getElementById('save-banner').classList.toggle('hidden', !v);
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT') addRecord();
+});
+</script>
+</body>
+</html>
