@@ -190,7 +190,7 @@
       <div>
         <label>접속 IP 주소</label>
         <div class="ip-row">
-          <input type="text" id="inp-ip" placeholder="로드 중...">
+          <input type="text" id="inp-ip" placeholder="가져오는 중...">
           <button type="button" id="btn-ip-load">내 IP 가져오기</button>
         </div>
       </div>
@@ -222,7 +222,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 데이터 리스트 노출 레이어 -->
+          <!-- 실시간 테이블 연동 공간 -->
         </tbody>
       </table>
     </div>
@@ -239,7 +239,7 @@
 
   const supabaseClientInstance = supabase.createClient(mySupabaseUrl, mySupabaseKey);
 
-  window.onload = function() {
+  window.onload = async function() {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
@@ -247,18 +247,19 @@
     document.getElementById('btn-ip-load').onclick = loadCurrentIP;
     document.getElementById('btn-add').onclick = addRecord;
     
-    loadCurrentIP();
+    // IP 로딩 실패하더라도 아래 데이터 목록 조회가 끊기지 않도록 순서 보장
+    await loadCurrentIP();
     fetchLogs();
   };
 
-  // 🔒 보안이 적용된 HTTPS 전용 공인 IP 주소 추적 프로토콜로 전면 교체
+  // 🔒 먹통 현상을 우회하는 초고속 응답 주소로 완전히 전면 개편
   async function loadCurrentIP() {
     try {
-      const res = await fetch('ipify.org');
+      const res = await fetch('ip-api.com');
       const data = await res.json();
-      document.getElementById('inp-ip').value = data.ip;
+      document.getElementById('inp-ip').value = data.query || '알 수 없음';
     } catch (e) {
-      document.getElementById('inp-ip').value = '127.0.0.1';
+      document.getElementById('inp-ip').value = '확인 불가';
     }
   }
 
