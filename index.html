@@ -235,16 +235,15 @@
     <p>© 보안 관리 대장 시스템 · 실시간 데이터베이스 연동 중</p>
   </div>
 </div>
-
-<!-- 📜 Supabase 연동 스크립트 라이브러리 추가 -->
 <script src="jsdelivr.net"></script>
 
 <script>
-  // 1. ⚠️ 아래 주소('https://...') 자리에 본인의 Supabase Project URL 주소를 직접 붙여넣으세요!
-  const supabaseUrl = 'https://여기에_복사한_URL_주소를_넣으세요.supabase.co'; 
-  const supabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 전달해주신 회원님의 키 적용 완료
+  // 1. 본인의 Supabase Project URL 주소를 따옴표 안에 꼭 입력하세요!
+  const mySupabaseUrl = 'https://ewanuxmitluhwiighbdo.supabase.co'; 
+  const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 전달해주신 키 적용 완료
 
-  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  // 전역 변수로 안전하게 Supabase 클라이언트 초기화
+  const supabaseClient = supabase.createClient(mySupabaseUrl, mySupabaseKey);
 
   // 페이지 로드 시 실행할 초기화 작업
   window.onload = function() {
@@ -271,8 +270,7 @@
 
   // 2. Supabase에서 데이터 목록 가져오기 (Read)
   async function fetchLogs() {
-    // 'logs'는 최초 첫 질문에서 생성법을 물어보셨던 테이블 명칭 기준입니다.
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('logs')
       .select('*')
       .order('id', { ascending: false });
@@ -321,14 +319,13 @@
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('logs')
       .insert([{ user_name, access_date, purpose, ip_address, note }]);
 
     if (error) {
       alert('저장 실패: ' + error.message);
     } else {
-      // 입력창 비우기 (사용자명, 일시 제외)
       document.getElementById('inp-purpose').value = '';
       document.getElementById('inp-note').value = '';
       fetchLogs(); // 목록 새로고침
@@ -339,7 +336,7 @@
   async function deleteRecord(id) {
     if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('logs')
       .delete()
       .eq('id', id);
@@ -351,11 +348,8 @@
     }
   }
 
-  // XSS 방지용 문자열 치환 함수
   function escapeHtml(str) {
     if(!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 </script>
-</body>
-</html>
