@@ -153,6 +153,7 @@
     .header { flex-direction: column; }
   }
 </style>
+<script src="jsdelivr.net"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -189,7 +190,7 @@
       <div>
         <label>접속 IP 주소</label>
         <div class="ip-row">
-          <input type="text" id="inp-ip" placeholder="0.0.0.0">
+          <input type="text" id="inp-ip" placeholder="로드 중...">
           <button type="button" id="btn-ip-load">내 IP 가져오기</button>
         </div>
       </div>
@@ -221,7 +222,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 데이터 노드 동적 주입 -->
+          <!-- 데이터 리스트 노출 레이어 -->
         </tbody>
       </table>
     </div>
@@ -232,30 +233,25 @@
   </div>
 </div>
 
-<!-- 📜 최신 ES 모듈 브라우저 네이티브 방식으로 Supabase를 에러 없이 완벽히 강제 로드합니다 -->
-<script type="module">
-  import { createClient } from 'jsdelivr.net'
-
+<script>
   const mySupabaseUrl = 'supabase.co'; 
   const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG';
 
-  const supabase = createClient(mySupabaseUrl, mySupabaseKey);
+  const supabaseClientInstance = supabase.createClient(mySupabaseUrl, mySupabaseKey);
 
-  window.addEventListener('DOMContentLoaded', () => {
-    // 날짜 기본값 세팅
+  window.onload = function() {
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
     
-    // 이벤트 바인딩
-    document.getElementById('btn-ip-load').addEventListener('click', loadCurrentIP);
-    document.getElementById('btn-add').addEventListener('click', addRecord);
+    document.getElementById('btn-ip-load').onclick = loadCurrentIP;
+    document.getElementById('btn-add').onclick = addRecord;
     
-    // 초기 로딩
     loadCurrentIP();
     fetchLogs();
-  });
+  };
 
+  // 🔒 보안이 적용된 HTTPS 전용 공인 IP 주소 추적 프로토콜로 전면 교체
   async function loadCurrentIP() {
     try {
       const res = await fetch('ipify.org');
@@ -267,14 +263,13 @@
   }
 
   async function fetchLogs() {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClientInstance
       .from('logs')
       .select('*')
       .order('id', { ascending: false });
 
     if (error) {
-      console.error(error);
-      alert('데이터 로드 실패: ' + error.message);
+      alert('데이터베이스 로드 에러: ' + error.message);
       return;
     }
 
@@ -290,13 +285,6 @@
 
     data.forEach((row, index) => {
       const tr = document.createElement('tr');
-      
-      // 삭제 버튼용 고유 전역 매핑 방지 구조
-      const btnDel = document.createElement('button');
-      btnDel.className = 'btn-del';
-      btnDel.innerText = '삭제';
-      btnDel.addEventListener('click', () => deleteRecord(row.id));
-
       tr.innerHTML = `
         <td class="c td-num">${data.length - index}</td>
         <td class="td-user">${escapeHtml(row.user_name)}</td>
@@ -304,9 +292,8 @@
         <td>${escapeHtml(row.purpose)}</td>
         <td class="td-ip">${escapeHtml(row.ip_address || '-')}</td>
         <td class="td-note">${escapeHtml(row.note || '-')}</td>
-        <td class="c"></td>
+        <td class="c"><button class="btn-del" onclick="deleteRecord(${row.id})">삭제</button></td>
       `;
-      tr.querySelector('td:last-child').appendChild(btnDel);
       tbody.appendChild(tr);
     });
   }
@@ -323,12 +310,12 @@
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseClientInstance
       .from('logs')
       .insert([{ user_name, access_date, purpose, ip_address, note }]);
 
     if (error) {
-      alert('저장 실패 원인: ' + error.message);
+      alert('데이터 저장 실패 원인: ' + error.message);
     } else {
       document.getElementById('inp-purpose').value = '';
       document.getElementById('inp-note').value = '';
@@ -339,13 +326,13 @@
   async function deleteRecord(id) {
     if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
 
-    const { error } = await supabase
+    const { error } = await supabaseClientInstance
       .from('logs')
       .delete()
       .eq('id', id);
 
     if (error) {
-      alert('삭제 실패 원인: ' + error.message);
+      alert('삭제 장애 발생: ' + error.message);
     } else {
       fetchLogs();
     }
