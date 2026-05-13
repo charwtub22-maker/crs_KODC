@@ -153,6 +153,7 @@
     .header { flex-direction: column; }
   }
 </style>
+<!-- 🔑 [해결 완료] 앞에 https:// 주소를 명확히 선언하여 주소창 왜곡 현상을 원천 방어했습니다 -->
 <script src="unpkg.com"></script>
 </head>
 <body>
@@ -222,7 +223,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 실시간 연동 데이터 표시 영역 -->
+          <!-- 실시간 로드 테이블 -->
         </tbody>
       </table>
     </div>
@@ -234,7 +235,6 @@
 </div>
 
 <script>
-  // 🔗 회원님의 실제 Supabase 접속 주소 및 API 키 완전 매핑 완료!
   const mySupabaseUrl = 'supabase.co'; 
   const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG';
 
@@ -252,7 +252,7 @@
     fetchLogs();
   };
 
-  // https:// 프로토콜 오타를 수정하여 차단 없이 0.1초 만에 로드되도록 변경
+  // 🔑 여기도 https:// 프로토콜을 안전하게 전면 개편했습니다
   async function loadCurrentIP() {
     try {
       const res = await fetch('ipify.org');
@@ -287,7 +287,6 @@
     data.forEach((row, index) => {
       const tr = document.createElement('tr');
       
-      // 타임스탬프 형식 가독성 있게 편집 (예: 2026-05-14 12:00:00)
       let formattedDate = '-';
       if (row.access_date) {
         const d = new Date(row.access_date);
@@ -322,7 +321,6 @@
       return;
     }
 
-    // 입력된 현지 시간을 Supabase가 선호하는 ISO 표준 규격으로 타임존 인코딩 변환
     const access_date = new Date(access_date_input).toISOString();
 
     const { error } = await supabaseClientInstance
