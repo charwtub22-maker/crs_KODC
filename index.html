@@ -153,8 +153,8 @@
     .header { flex-direction: column; }
   }
 </style>
-<!-- 📜 에러 방지를 위해 확실한 공식 Supabase 라이브러리를 상단에서 먼저 로드합니다 -->
-<script src="jsdelivr.net"></script>
+<!-- 📜 가장 안정적인 UNPKG CDN 서버에서 Supabase 라이브러리를 불러옵니다 -->
+<script src="unpkg.com"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -239,20 +239,19 @@
   const mySupabaseUrl = 'https://ewanuxmitluhwiighbdo.supabase.co'; 
   const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 회원님의 키 적용 완료
 
-  // 변수 선언 시점 충돌을 완전히 피하기 위해 함수 바깥에 선언만 해둡니다.
   let supabaseClientInstance;
 
-  // 브라우저 화면이 완전히 켜지면 실행되는 안전 장치
   window.onload = function() {
-    // Supabase 클라이언트 초기화 실행
-    if (typeof supabase !== 'undefined') {
-      supabaseClientInstance = supabase.createClient(mySupabaseUrl, mySupabaseKey);
+    // 안전한 객체 탐색 방식으로 라이브러리 검증
+    const supabaseLib = window.supabase || (window.internalSupabase ? window.internalSupabase : null);
+    
+    if (supabaseLib && typeof supabaseLib.createClient === 'function') {
+      supabaseClientInstance = supabaseLib.createClient(mySupabaseUrl, mySupabaseKey);
     } else {
       alert("데이터베이스 서버 연결에 실패했습니다. 인터넷 상태를 확인해 주세요.");
       return;
     }
 
-    // 시간 세팅
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
@@ -271,7 +270,6 @@
     }
   }
 
-  // 2. 데이터 가져오기 (Read)
   async function fetchLogs() {
     if (!supabaseClientInstance) return;
     const { data, error } = await supabaseClientInstance
@@ -310,7 +308,6 @@
     });
   }
 
-  // 3. 기록 추가하기 (Create)
   async function addRecord() {
     if (!supabaseClientInstance) {
       alert('데이터베이스가 아직 연결되지 않았습니다.');
@@ -340,7 +337,6 @@
     }
   }
 
-  // 4. 기록 삭제하기 (Delete)
   async function deleteRecord(id) {
     if (!supabaseClientInstance) return;
     if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
@@ -364,3 +360,4 @@
 </script>
 </body>
 </html>
+
