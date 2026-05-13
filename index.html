@@ -153,8 +153,8 @@
     .header { flex-direction: column; }
   }
 </style>
-<!-- 📜 가장 안정적인 UNPKG CDN 서버에서 Supabase 라이브러리를 불러옵니다 -->
-<script src="unpkg.com"></script>
+<!-- 📜 고해상도 글로벌 CDN 주소로 라이브러리 로드를 전면 강제 적용합니다 -->
+<script src="jsdelivr.net"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -223,7 +223,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 데이터 테이블 영역 -->
+          <!-- 실시간 갱신 데이터 레이어 -->
         </tbody>
       </table>
     </div>
@@ -235,18 +235,18 @@
 </div>
 
 <script>
-  // 1. ⚠️ 본인의 Supabase Project URL 주소를 아래 따옴표 안에 정확히 입력하세요!
+  // 회원님의 Supabase 고유 연동 주소와 발급 키 세팅 완료
   const mySupabaseUrl = 'https://ewanuxmitluhwiighbdo.supabase.co'; 
-  const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 회원님의 키 적용 완료
+  const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG';
 
   let supabaseClientInstance;
 
   window.onload = function() {
-    // 안전한 객체 탐색 방식으로 라이브러리 검증
-    const supabaseLib = window.supabase || (window.internalSupabase ? window.internalSupabase : null);
+    // 글로벌 윈도우 스코프에서 supabase 서브 컴포넌트를 정밀 확인합니다.
+    const targetLib = window.supabase;
     
-    if (supabaseLib && typeof supabaseLib.createClient === 'function') {
-      supabaseClientInstance = supabaseLib.createClient(mySupabaseUrl, mySupabaseKey);
+    if (targetLib && typeof targetLib.createClient === 'function') {
+      supabaseClientInstance = targetLib.createClient(mySupabaseUrl, mySupabaseKey);
     } else {
       alert("데이터베이스 서버 연결에 실패했습니다. 인터넷 상태를 확인해 주세요.");
       return;
@@ -278,8 +278,8 @@
       .order('id', { ascending: false });
 
     if (error) {
-      console.error('로드 실패:', error.message);
-      alert('Supabase 연동 실패: 테이블 이름이 "logs"가 맞는지 대시보드에서 확인해 주세요.');
+      console.error('데이터 수신 장애:', error.message);
+      alert('Supabase 연동 오류: 테이블 이름이 "logs"인지, 또는 RLS 보안 설정이 꺼져 있는지 대시보드에서 확인하세요.');
       return;
     }
 
@@ -310,7 +310,7 @@
 
   async function addRecord() {
     if (!supabaseClientInstance) {
-      alert('데이터베이스가 아직 연결되지 않았습니다.');
+      alert('서버 연결이 아직 비활성화 상태입니다.');
       return;
     }
     const user_name = document.getElementById('inp-user').value.trim();
@@ -329,7 +329,7 @@
       .insert([{ user_name, access_date, purpose, ip_address, note }]);
 
     if (error) {
-      alert('저장 실패: ' + error.message);
+      alert('저장 실패 원인: ' + error.message);
     } else {
       document.getElementById('inp-purpose').value = '';
       document.getElementById('inp-note').value = '';
@@ -347,7 +347,7 @@
       .eq('id', id);
 
     if (error) {
-      alert('삭제 실패: ' + error.message);
+      alert('삭제 실패 원인: ' + error.message);
     } else {
       fetchLogs();
     }
@@ -360,4 +360,3 @@
 </script>
 </body>
 </html>
-
