@@ -87,10 +87,6 @@
   input::placeholder { color: var(--text3); }
   input[readonly] { background: var(--surface2); color: var(--text2); cursor: default; }
 
-  .ip-status { font-size: 11px; color: var(--text3); margin-top: 3px; height: 15px; }
-  .ip-status.ok { color: var(--success); }
-  .ip-status.fail { color: #b36b00; }
-
   button {
     font-family: inherit; font-size: 13px; font-weight: 500;
     padding: 8px 16px; border-radius: var(--radius);
@@ -157,6 +153,8 @@
     .header { flex-direction: column; }
   }
 </style>
+<!-- 📜 에러 방지를 위해 확실한 공식 Supabase 라이브러리를 상단에서 먼저 로드합니다 -->
+<script src="jsdelivr.net"></script>
 </head>
 <body>
 <div class="page-wrap">
@@ -225,7 +223,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 데이터가 여기에 동적으로 추가됩니다 -->
+          <!-- 데이터 테이블 영역 -->
         </tbody>
       </table>
     </div>
@@ -235,29 +233,34 @@
     <p>© 보안 관리 대장 시스템 · 실시간 데이터베이스 연동 중</p>
   </div>
 </div>
-<script src="jsdelivr.net"></script>
 
 <script>
-  // 1. 본인의 Supabase Project URL 주소를 따옴표 안에 꼭 입력하세요!
+  // 1. ⚠️ 본인의 Supabase Project URL 주소를 아래 따옴표 안에 정확히 입력하세요!
   const mySupabaseUrl = 'https://ewanuxmitluhwiighbdo.supabase.co'; 
-  const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 전달해주신 키 적용 완료
+  const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 회원님의 키 적용 완료
 
-  // 전역 변수로 안전하게 Supabase 클라이언트 초기화
-  const supabaseClient = supabase.createClient(mySupabaseUrl, mySupabaseKey);
+  // 변수 선언 시점 충돌을 완전히 피하기 위해 함수 바깥에 선언만 해둡니다.
+  let supabaseClientInstance;
 
-  // 페이지 로드 시 실행할 초기화 작업
+  // 브라우저 화면이 완전히 켜지면 실행되는 안전 장치
   window.onload = function() {
-    // 날짜 자동 설정
+    // Supabase 클라이언트 초기화 실행
+    if (typeof supabase !== 'undefined') {
+      supabaseClientInstance = supabase.createClient(mySupabaseUrl, mySupabaseKey);
+    } else {
+      alert("데이터베이스 서버 연결에 실패했습니다. 인터넷 상태를 확인해 주세요.");
+      return;
+    }
+
+    // 시간 세팅
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
     
-    // IP 로드 및 데이터 로드
     loadCurrentIP();
     fetchLogs();
   };
 
-  // 공공 IP 가져오기 API 함수
   async function loadCurrentIP() {
     try {
       const res = await fetch('ipify.org');
@@ -268,16 +271,17 @@
     }
   }
 
-  // 2. Supabase에서 데이터 목록 가져오기 (Read)
+  // 2. 데이터 가져오기 (Read)
   async function fetchLogs() {
-    const { data, error } = await supabaseClient
+    if (!supabaseClientInstance) return;
+    const { data, error } = await supabaseClientInstance
       .from('logs')
       .select('*')
       .order('id', { ascending: false });
 
     if (error) {
-      console.error('데이터 로드 실패:', error.message);
-      alert('Supabase 테이블 연동 오류: 테이블명이 "logs"가 맞는지 확인해 주세요.');
+      console.error('로드 실패:', error.message);
+      alert('Supabase 연동 실패: 테이블 이름이 "logs"가 맞는지 대시보드에서 확인해 주세요.');
       return;
     }
 
@@ -306,8 +310,12 @@
     });
   }
 
-  // 3. Supabase에 새 기록 추가하기 (Create)
+  // 3. 기록 추가하기 (Create)
   async function addRecord() {
+    if (!supabaseClientInstance) {
+      alert('데이터베이스가 아직 연결되지 않았습니다.');
+      return;
+    }
     const user_name = document.getElementById('inp-user').value.trim();
     const access_date = document.getElementById('inp-date').value;
     const purpose = document.getElementById('inp-purpose').value.trim();
@@ -319,7 +327,7 @@
       return;
     }
 
-    const { error } = await supabaseClient
+    const { error } = await supabaseClientInstance
       .from('logs')
       .insert([{ user_name, access_date, purpose, ip_address, note }]);
 
@@ -328,15 +336,16 @@
     } else {
       document.getElementById('inp-purpose').value = '';
       document.getElementById('inp-note').value = '';
-      fetchLogs(); // 목록 새로고침
+      fetchLogs();
     }
   }
 
-  // 4. Supabase에서 기록 삭제하기 (Delete)
+  // 4. 기록 삭제하기 (Delete)
   async function deleteRecord(id) {
+    if (!supabaseClientInstance) return;
     if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
 
-    const { error } = await supabaseClient
+    const { error } = await supabaseClientInstance
       .from('logs')
       .delete()
       .eq('id', id);
@@ -344,7 +353,7 @@
     if (error) {
       alert('삭제 실패: ' + error.message);
     } else {
-      fetchLogs(); // 목록 새로고침
+      fetchLogs();
     }
   }
 
@@ -353,3 +362,5 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 </script>
+</body>
+</html>
