@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>외장하드 접속 관리대장</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f2ed;
+    --surface: #ffffff;
+    --surface2: #f9f8f5;
+    --border: #e0ddd6;
+    --border2: #ccc9c0;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9b93;
+    --accent: #1a4f8a;
+    --danger: #8a1a1a;
+    --danger-bg: #fae8e8;
+    --danger-border: #e8b8b8;
+    --success: #1a6640;
+    --success-bg: #e8f5ee;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .page-wrap { max-width: 960px; margin: 0 auto; }
+
+  .header {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .header-left .stamp {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.15em;
+    color: var(--text3); text-transform: uppercase; margin-bottom: 5px;
+  }
+  .header-left h1 { font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 3px; }
+  .header-left p { font-size: 12px; color: var(--text2); }
+  .stat { text-align: right; }
+  .stat-num { font-size: 26px; font-weight: 600; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  .form-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 1.5rem 2rem; margin-bottom: 1.25rem;
+  }
+  .form-card h2 {
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border);
+  }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 4px; }
+  label .req { color: var(--accent); }
+
+  .ip-row { display: flex; gap: 8px; align-items: stretch; }
+  .ip-row input { flex: 1; }
+
+  input[type="text"], input[type="datetime-local"] {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    font-family: inherit; font-size: 14px; color: var(--text);
+    background: var(--surface); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,79,138,0.1); }
+  input::placeholder { color: var(--text3); }
+  input[readonly] { background: var(--surface2); color: var(--text2); cursor: default; }
+
+  .ip-status { font-size: 11px; color: var(--text3); margin-top: 3px; height: 15px; }
+  .ip-status.ok { color: var(--success); }
+  .ip-status.fail { color: #b36b00; }
+
+  button {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    padding: 8px 16px; border-radius: var(--radius);
+    border: 1px solid var(--border2); background: var(--surface);
+    color: var(--text); cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+    display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  button:hover { background: var(--surface2); }
+  button:active { transform: scale(0.98); }
+
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { background: #153f6e; border-color: #153f6e; }
+  .btn-danger { color: var(--danger); border-color: var(--danger-border); background: var(--danger-bg); }
+  .btn-danger:hover { background: #f5d5d5; }
+
+  .form-actions {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); flex-wrap: wrap;
+  }
+
+  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+  .table-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); gap: 10px; flex-wrap: wrap;
+  }
+  .table-toolbar h2 { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--surface2); border-bottom: 1px solid var(--border); }
+  th {
+    padding: 9px 12px; text-align: left;
+    font-size: 11px; font-weight: 600; color: var(--text3);
+    letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  }
+  th.c, td.c { text-align: center; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:nth-child(even) { background: #fdfcfa; }
+  tbody tr:nth-child(even):hover { background: var(--surface2); }
+
+  .td-num { font-size: 11px; color: var(--text3); }
+  .td-user { font-weight: 500; }
+  .td-date { font-size: 12px; color: var(--text2); white-space: nowrap; }
+  .td-ip { font-size: 11px; color: var(--text2); white-space: nowrap; font-family: 'Courier New', monospace; }
+  .td-note { font-size: 12px; color: var(--text2); }
+  .btn-del { padding: 3px 8px; font-size: 11px; color: var(--danger); border-color: var(--danger-border); background: transparent; }
+  .btn-del:hover { background: var(--danger-bg); }
+
+  .empty-state { padding: 3rem; text-align: center; color: var(--text3); }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; opacity: 0.4; }
+
+  .footer { margin-top: 1.25rem; text-align: center; font-size: 12px; color: var(--text3); line-height: 1.8; }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .form-card, .btn-del, .footer { display: none !important; }
+    .table-card { box-shadow: none; border: 1px solid #ccc; }
+  }
+  @media (max-width: 640px) {
+    .form-grid-3, .form-grid-2 { grid-template-columns: 1fr; }
+    .header { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="stamp">보안 관리 문서 · External Drive Access Log</div>
+      <h1>외장하드 접속 관리대장</h1>
+      <p>접속 시마다 사용자 · 목적 · 일시 · IP를 기록합니다</p>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="total-num">0</div>
+      <div class="stat-label">총 접속 건수</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h2>새 접속 기록 입력</h2>
+    <div class="form-grid-3">
+      <div>
+        <label>사용자명 <span class="req">*</span></label>
+        <input type="text" id="inp-user" placeholder="예: 홍길동">
+      </div>
+      <div>
+        <label>접속 일시 <span class="req">*</span></label>
+        <input type="datetime-local" id="inp-date">
+      </div>
+      <div>
+        <label>접속 목적 <span class="req">*</span></label>
+        <input type="text" id="inp-purpose" placeholder="예: 백업 자료 반출">
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div>
+        <label>접속 IP 주소</label>
+        <div class="ip-row">
+          <input type="text" id="inp-ip" placeholder="0.0.0.0">
+          <button type="button" onclick="loadCurrentIP()">내 IP 가져오기</button>
+        </div>
+      </div>
+      <div>
+        <label>비고</label>
+        <input type="text" id="inp-note" placeholder="추가 전달 사항">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="addRecord()">➕ 기록 추가</button>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <h2>접속 로그 명단</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="c" style="width: 60px;">번호</th>
+            <th style="width: 120px;">사용자명</th>
+            <th style="width: 160px;">접속 일시</th>
+            <th>접속 목적</th>
+            <th style="width: 140px;">IP 주소</th>
+            <th>비고</th>
+            <th class="c" style="width: 80px;">관리</th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody">
+          <!-- 데이터가 여기에 동적으로 추가됩니다 -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>© 보안 관리 대장 시스템 · 실시간 데이터베이스 연동 중</p>
+  </div>
+</div>
+
+<!-- 📜 Supabase 연동 스크립트 라이브러리 추가 -->
+<script src="jsdelivr.net"></script>
+
+<script>
+  // 1. ⚠️ 아래 주소('https://...') 자리에 본인의 Supabase Project URL 주소를 직접 붙여넣으세요!
+  const supabaseUrl = 'https://여기에_복사한_URL_주소를_넣으세요.supabase.co'; 
+  const supabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG'; // 전달해주신 회원님의 키 적용 완료
+
+  const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+  // 페이지 로드 시 실행할 초기화 작업
+  window.onload = function() {
+    // 날짜 자동 설정
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
+    
+    // IP 로드 및 데이터 로드
+    loadCurrentIP();
+    fetchLogs();
+  };
+
+  // 공공 IP 가져오기 API 함수
+  async function loadCurrentIP() {
+    try {
+      const res = await fetch('ipify.org');
+      const data = await res.json();
+      document.getElementById('inp-ip').value = data.ip;
+    } catch (e) {
+      document.getElementById('inp-ip').value = '127.0.0.1';
+    }
+  }
+
+  // 2. Supabase에서 데이터 목록 가져오기 (Read)
+  async function fetchLogs() {
+    // 'logs'는 최초 첫 질문에서 생성법을 물어보셨던 테이블 명칭 기준입니다.
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .order('id', { ascending: false });
+
+    if (error) {
+      console.error('데이터 로드 실패:', error.message);
+      alert('Supabase 테이블 연동 오류: 테이블명이 "logs"가 맞는지 확인해 주세요.');
+      return;
+    }
+
+    const tbody = document.getElementById('log-tbody');
+    const totalNum = document.getElementById('total-num');
+    tbody.innerHTML = '';
+    totalNum.innerText = data.length;
+
+    if (data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-icon">📂</div>기록된 접속 데이터가 없습니다.</td></tr>`;
+      return;
+    }
+
+    data.forEach((row, index) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="c td-num">${data.length - index}</td>
+        <td class="td-user">${escapeHtml(row.user_name)}</td>
+        <td class="td-date">${row.access_date ? row.access_date.replace('T', ' ') : ''}</td>
+        <td>${escapeHtml(row.purpose)}</td>
+        <td class="td-ip">${escapeHtml(row.ip_address || '-')}</td>
+        <td class="td-note">${escapeHtml(row.note || '-')}</td>
+        <td class="c"><button class="btn-del" onclick="deleteRecord(${row.id})">삭제</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 3. Supabase에 새 기록 추가하기 (Create)
+  async function addRecord() {
+    const user_name = document.getElementById('inp-user').value.trim();
+    const access_date = document.getElementById('inp-date').value;
+    const purpose = document.getElementById('inp-purpose').value.trim();
+    const ip_address = document.getElementById('inp-ip').value.trim();
+    const note = document.getElementById('inp-note').value.trim();
+
+    if (!user_name || !access_date || !purpose) {
+      alert('필수 항목(*)을 모두 입력해 주세요.');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('logs')
+      .insert([{ user_name, access_date, purpose, ip_address, note }]);
+
+    if (error) {
+      alert('저장 실패: ' + error.message);
+    } else {
+      // 입력창 비우기 (사용자명, 일시 제외)
+      document.getElementById('inp-purpose').value = '';
+      document.getElementById('inp-note').value = '';
+      fetchLogs(); // 목록 새로고침
+    }
+  }
+
+  // 4. Supabase에서 기록 삭제하기 (Delete)
+  async function deleteRecord(id) {
+    if (!confirm('정말 이 기록을 삭제하시겠습니까?')) return;
+
+    const { error } = await supabase
+      .from('logs')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      alert('삭제 실패: ' + error.message);
+    } else {
+      fetchLogs(); // 목록 새로고침
+    }
+  }
+
+  // XSS 방지용 문자열 치환 함수
+  function escapeHtml(str) {
+    if(!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>
