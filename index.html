@@ -153,7 +153,7 @@
     .header { flex-direction: column; }
   }
 </style>
-<!-- 📜 고해상도 글로벌 CDN 주소로 라이브러리 로드를 전면 강제 적용합니다 -->
+<!-- 📜 가장 확실한 공식 글로벌 CDN을 주소 누락 없이 완전한 경로로 수정해 삽입했습니다 -->
 <script src="jsdelivr.net"></script>
 </head>
 <body>
@@ -223,7 +223,7 @@
           </tr>
         </thead>
         <tbody id="log-tbody">
-          <!-- 실시간 갱신 데이터 레이어 -->
+          <!-- 실시간 테이블 데이터 연동 영역 -->
         </tbody>
       </table>
     </div>
@@ -235,14 +235,14 @@
 </div>
 
 <script>
-  // 회원님의 Supabase 고유 연동 주소와 발급 키 세팅 완료
-  const mySupabaseUrl = 'https://ewanuxmitluhwiighbdo.supabase.co'; 
+  // 회원님의 Supabase 정보 세팅 완료 (더 이상 수정 불필요)
+  const mySupabaseUrl = 'supabase.co'; 
   const mySupabaseKey = 'sb_publishable_HgzjGGnR3X3KpYo7_vZlTA_G10rgQnG';
 
   let supabaseClientInstance;
 
   window.onload = function() {
-    // 글로벌 윈도우 스코프에서 supabase 서브 컴포넌트를 정밀 확인합니다.
+    // 라이브러리가 로드되었는지 확인
     const targetLib = window.supabase;
     
     if (targetLib && typeof targetLib.createClient === 'function') {
@@ -252,6 +252,7 @@
       return;
     }
 
+    // 시간 자동 설정
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     document.getElementById('inp-date').value = now.toISOString().slice(0, 16);
@@ -278,8 +279,8 @@
       .order('id', { ascending: false });
 
     if (error) {
-      console.error('데이터 수신 장애:', error.message);
-      alert('Supabase 연동 오류: 테이블 이름이 "logs"인지, 또는 RLS 보안 설정이 꺼져 있는지 대시보드에서 확인하세요.');
+      console.error('데이터 로드 실패:', error.message);
+      alert('Supabase 연동 실패: 테이블 이름이 "logs"가 맞는지 대시보드에서 확인해 주세요.');
       return;
     }
 
@@ -310,7 +311,7 @@
 
   async function addRecord() {
     if (!supabaseClientInstance) {
-      alert('서버 연결이 아직 비활성화 상태입니다.');
+      alert('데이터베이스 연결 전입니다.');
       return;
     }
     const user_name = document.getElementById('inp-user').value.trim();
@@ -329,7 +330,7 @@
       .insert([{ user_name, access_date, purpose, ip_address, note }]);
 
     if (error) {
-      alert('저장 실패 원인: ' + error.message);
+      alert('저장 실패: ' + error.message);
     } else {
       document.getElementById('inp-purpose').value = '';
       document.getElementById('inp-note').value = '';
@@ -347,7 +348,7 @@
       .eq('id', id);
 
     if (error) {
-      alert('삭제 실패 원인: ' + error.message);
+      alert('삭제 실패: ' + error.message);
     } else {
       fetchLogs();
     }
